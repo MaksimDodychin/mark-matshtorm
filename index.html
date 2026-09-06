@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Математический шторм 🌩 Битва цифр</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23ff5fa2"/><text x="32" y="42" font-family="Arial Black,Arial" font-size="26" font-weight="900" fill="%23ffffff" text-anchor="middle">2×2</text></svg>'>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#1a0d22;color:#fff;
+    font-family:'Trebuchet MS',system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  #c{position:fixed;inset:0;display:block}
+  .screen{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;padding:16px;overflow:auto;background:radial-gradient(1000px 700px at 50% 25%,#4a1d5e 0%,#26102f 60%,#160a1c 100%)}
+  .hidden{display:none!important}
+  h1{margin:0;font-size:clamp(26px,7vw,58px);letter-spacing:2px;text-shadow:0 4px 0 #2a0f38,0 0 30px #ff5fa288;text-align:center}
+  .sub{opacity:.9;margin:0;text-align:center;font-size:clamp(13px,2.4vw,18px);max-width:640px;line-height:1.5}
+  .btn{background:linear-gradient(180deg,#ff7ab5,#e0348a);border:2px solid #ffd0e6aa;border-radius:16px;color:#fff;
+    font-size:clamp(16px,2.8vw,22px);font-weight:900;padding:13px 26px;cursor:pointer;min-width:min(300px,80vw);
+    box-shadow:0 6px 0 #8e1152;transition:transform .08s}
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #8e1152}
+  .btn.dim{background:linear-gradient(180deg,#5b4668,#3a2a45);box-shadow:0 6px 0 #241a2c}
+  /* ── HUD боя ── */
+  #hud{position:fixed;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;z-index:20;
+    pointer-events:none;font-weight:900;font-size:clamp(12px,2.2vw,17px)}
+  .pane{background:#26102fcc;border:1px solid #ffffff22;border-radius:12px;padding:6px 12px}
+  /* ── нижняя панель: задача + клавиатура ── */
+  #bottom{position:fixed;left:0;right:0;bottom:0;z-index:22;padding:6px 8px 10px;
+    background:linear-gradient(180deg,#160a1c00,#160a1cdd 22%);display:none}
+  body.fight #bottom{display:block}
+  #task{text-align:center;font-size:clamp(20px,5vw,38px);font-weight:900;margin:2px 0 6px;
+    text-shadow:0 3px 0 #2a0f38}
+  #answer{text-align:center;font-size:clamp(22px,5vw,36px);font-weight:900;letter-spacing:3px;
+    min-height:1.2em;color:#ffe066;margin-bottom:6px}
+  #pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:520px;margin:0 auto}
+  .key{background:#3b2748;border:2px solid #ffffff22;border-radius:12px;color:#fff;font-size:clamp(17px,3.4vw,24px);
+    font-weight:900;padding:10px 0;text-align:center;cursor:pointer}
+  .key:active{background:#5b3a70}
+  .key.ok{background:linear-gradient(180deg,#4ade80,#16a34a);border-color:#bbf7d0aa}
+  .key.del{background:linear-gradient(180deg,#fb923c,#ea580c);border-color:#fed7aaaa}
+  /* ── выбор героя и способности ── */
+  #choose{position:fixed;left:0;right:0;bottom:0;z-index:23;padding:10px;background:#160a1cee;display:none}
+  body.choosing #choose{display:block}
+  body.choosing #bottom{display:none}
+  #chooseTitle{text-align:center;font-weight:900;font-size:clamp(15px,3vw,22px);margin-bottom:8px}
+  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .card{background:#2f1d3d;border:2px solid #ffffff22;border-radius:14px;padding:8px 12px;min-width:96px;
+    text-align:center;cursor:pointer}
+  .card:active,.card.sel{border-color:#ffd0e6;box-shadow:0 0 0 3px #ff5fa244}
+  .card .big{font-size:26px;font-weight:900}
+  .card .nm{font-size:12px;font-weight:900;margin-top:2px}
+  .card .ds{font-size:11px;opacity:.85;line-height:1.35;margin-top:3px}
+  .card.dead{opacity:.35;pointer-events:none}
+  #big{position:fixed;left:0;right:0;top:22%;text-align:center;font-size:clamp(24px,6vw,52px);font-weight:900;
+    z-index:25;pointer-events:none;white-space:pre-line;text-shadow:0 3px 0 #2a0f38,0 0 24px #000;transition:opacity .3s}
+  #toast{position:fixed;top:12px;left:50%;transform:translate(-50%,-90px);z-index:40;background:linear-gradient(180deg,#f59e0b,#b45309);
+    border:2px solid #fde68a88;border-radius:14px;padding:9px 20px;font-weight:900;transition:transform .35s cubic-bezier(.2,1.6,.4,1)}
+  #toast.show{transform:translate(-50%,0)}
+  .grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:820px}
+  .tile{background:#2f1d3dcc;border:2px solid #ffffff22;border-radius:14px;padding:10px 12px;width:150px;text-align:center;cursor:pointer}
+  .tile.on{border-color:#4ade80;box-shadow:0 0 0 3px #4ade8044}
+  .tile.lock{opacity:.45;cursor:not-allowed}
+  /* диалог слияния поверх боя */
+  #mergeAsk{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);z-index:35;display:none;
+    background:#2a1636f0;border:3px solid #ffd0e6;border-radius:20px;padding:16px 22px;text-align:center;
+    box-shadow:0 14px 44px #000a}
+  #mergeAsk.show{display:block;animation:pop .22s ease-out forwards}
+  @keyframes pop{to{transform:translate(-50%,-50%) scale(1)}}
+  #mergeAsk .mtitle{font-size:clamp(22px,4.6vw,34px);font-weight:900;margin-bottom:4px}
+  #mergeAsk .msub{opacity:.85;margin-bottom:12px;font-size:14px}
+  #mergeAsk .mrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  /* 🧮 калькулятор сбора отряда */
+  #calc{background:#241333;border:3px solid #6b4a80;border-radius:18px;padding:10px;max-width:360px;width:92vw;
+    box-shadow:0 10px 30px #0008}
+  #calcDisp{background:#12212a;border:2px solid #2f5061;border-radius:10px;color:#8ef0b0;
+    font-family:'Courier New',monospace;font-weight:900;font-size:clamp(20px,4.6vw,30px);
+    padding:8px 12px;text-align:right;margin-bottom:8px;min-height:1.3em;overflow:hidden}
+  #calcKeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .ck{background:#3b2748;border:2px solid #ffffff22;border-radius:12px;color:#fff;font-weight:900;
+    font-size:clamp(16px,3.2vw,22px);padding:11px 0;text-align:center;cursor:pointer}
+  .ck:active{background:#5b3a70}
+  .ck.op{background:linear-gradient(180deg,#f59e0b,#b45309)}
+  .ck.eq{background:linear-gradient(180deg,#4ade80,#16a34a)}
+  .ck.add{background:linear-gradient(180deg,#38bdf8,#0284c7);grid-column:span 2}
+  .ck.lock{opacity:.3;pointer-events:none}
+  #squadRow .card{min-width:64px;padding:6px 8px}
+  /* 📖 диалог-книжка */
+  #storyArt{font-size:clamp(56px,14vw,120px);font-weight:900;line-height:1;margin-bottom:6px;
+    text-shadow:0 6px 0 #2a0f38}
+  #storyBox{background:#fff7e8;color:#241a2c;border:4px solid #ffd0a0;border-radius:18px;
+    padding:14px 18px;max-width:min(620px,92vw);box-shadow:0 12px 34px #0008}
+  #storyWho{font-weight:900;font-size:clamp(15px,3vw,20px);margin-bottom:4px;color:#b45309}
+  #storyText{font-size:clamp(15px,3vw,20px);line-height:1.55}
+  #plusHud{position:fixed;left:8px;top:44px;z-index:21;background:#26102fcc;border:1px solid #ffffff22;
+    border-radius:12px;padding:5px 12px;font-weight:900;display:none}
+  body.fight #plusHud{display:block}
+  #fightBtns{position:fixed;right:8px;top:44px;z-index:24;display:none;flex-direction:column;gap:6px}
+  body.fight #fightBtns{display:flex}
+  .fb{background:#3b2748dd;border:2px solid #ffffff22;border-radius:12px;color:#fff;font-weight:900;
+    font-size:13px;padding:7px 12px;cursor:pointer}
+  .fb:active{background:#5b3a70}
+  .tile h3{margin:2px 0 4px;font-size:15px}
+  .tile p{margin:0;font-size:11.5px;opacity:.85;line-height:1.4}
+</style>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="shortcut icon" type="image/png" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Математический шторм">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="msapplication-TileImage" content="icon-192.png">
+  <meta name="msapplication-TileColor" content="#ff5fa2">
+  <script>window.__APP_VER = "a584158c3e";</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- МЕНЮ -->
+<div class="screen" id="menu">
+  <div style="font-size:56px">🌩✖️</div>
+  <h1>МАТЕМАТИЧЕСКИЙ ШТОРМ</h1>
+  <p class="sub">Битва цифр! Твоя команда — живые циферки. Чтобы ударить — реши пример.
+     Ошибся — бьют тебя. 100 уровней и 10 гигантских боссов.</p>
+  <button class="btn" id="btnPlay">⚔️ В БОЙ</button>
+  <button class="btn dim" id="btnDiff">🎚 СЛОЖНОСТЬ</button>
+  <button class="btn dim" id="btnTeam">🔢 МОЯ КОМАНДА</button>
+  <button class="btn dim" id="btnLevels">🗺 УРОВНИ</button>
+</div>
+
+<!-- СЛОЖНОСТЬ -->
+<div class="screen hidden" id="diffScr">
+  <h1 style="font-size:30px">🎚 СЛОЖНОСТЬ</h1>
+  <p class="sub">Чем сложнее — тем меньше подсказок и сильнее враги</p>
+  <div class="grid" id="diffGrid"></div>
+  <button class="btn" id="diffBack">⬅️ НАЗАД</button>
+</div>
+
+<!-- КОМАНДА -->
+<div class="screen hidden" id="team">
+  <h1 style="font-size:30px">🔢 МОЯ КОМАНДА</h1>
+  <p class="sub" id="teamSub"></p>
+  <div class="grid" id="teamGrid"></div>
+  <button class="btn" id="teamBack">⬅️ НАЗАД</button>
+</div>
+
+<!-- СБОР ОТРЯДА НА КАЛЬКУЛЯТОРЕ (идея Марка) -->
+<div class="screen hidden" id="squad">
+  <h1 style="font-size:clamp(20px,4vw,30px)">🧮 КАЛЬКУЛЯТОР ОТРЯДА</h1>
+  <p class="sub" id="squadSub">Нажми цифру и «В ОТРЯД». Или собери новую: <b>7 + 2 =</b> даст цифру 9!</p>
+  <div id="calc">
+    <div id="calcDisp">—</div>
+    <div id="calcKeys"></div>
+  </div>
+  <div class="sub" style="margin:2px 0 0">Твой отряд:</div>
+  <div class="row" id="squadRow"></div>
+  <button class="btn" id="squadGo">⚔️ В БОЙ</button>
+  <button class="btn dim" id="squadBack">⬅️ НАЗАД</button>
+</div>
+
+<!-- ПОДТВЕРЖДЕНИЕ СЛИЯНИЯ (наводишь цифру на цифру прямо в бою) -->
+<div id="mergeAsk">
+  <div class="mtitle" id="mergeText">3 + 4 = 7</div>
+  <div class="msub">Объединить в одну крутую цифру?</div>
+  <div class="mrow">
+    <button class="btn" id="mergeYes" style="min-width:150px">✅ ОБЪЕДИНИТЬ</button>
+    <button class="btn dim" id="mergeNo" style="min-width:150px">✖️ ОТМЕНА</button>
+  </div>
+</div>
+
+<!-- УРОВНИ -->
+<div class="screen hidden" id="levels">
+  <h1 style="font-size:30px">🗺 УРОВНИ</h1>
+  <p class="sub" id="levelsSub"></p>
+  <div class="grid" id="levelsGrid"></div>
+  <button class="btn" id="levelsBack">⬅️ НАЗАД</button>
+</div>
+
+<!-- 📖 ДИАЛОГ-КНИЖКА (встреча с новой цифрой) -->
+<div class="screen hidden" id="story">
+  <div id="storyArt"></div>
+  <div id="storyBox">
+    <div id="storyWho">1</div>
+    <div id="storyText">…</div>
+  </div>
+  <button class="btn" id="storyNext">➡️ ДАЛЬШЕ</button>
+</div>
+
+<!-- ИТОГ -->
+<div class="screen hidden" id="result">
+  <div style="font-size:56px" id="resIcon">🏆</div>
+  <h1 id="resTitle" style="font-size:34px">ПОБЕДА!</h1>
+  <p class="sub" id="resText"></p>
+  <button class="btn" id="resNext">➡️ ДАЛЬШЕ</button>
+  <button class="btn dim" id="resMenu">🏠 В МЕНЮ</button>
+</div>
+
+<div id="hud" class="hidden">
+  <div class="pane" id="hudLeft"></div>
+  <div class="pane" id="hudRight"></div>
+</div>
+<div id="big"></div>
+<div id="toast"></div>
+<div id="plusHud">➕ 0</div>
+<!-- кнопки прямо в бою: уровни и выход в меню -->
+<div id="fightBtns">
+  <button class="fb" id="fbLevels">🗺 УРОВНИ</button>
+  <button class="fb" id="fbMenu">🏠 МЕНЮ</button>
+</div>
+
+<!-- выбор героя/способности -->
+<div id="choose">
+  <div id="chooseTitle">Кто атакует?</div>
+  <div class="row" id="chooseRow"></div>
+</div>
+
+<!-- задача + клавиатура -->
+<div id="bottom">
+  <div id="task">7 × 8 = ?</div>
+  <div id="answer">_</div>
+  <div id="pad"></div>
+</div>
+
+<script>
+/* ═══════════════════ МАТЕМАТИЧЕСКИЙ ШТОРМ — битва цифр (2D, canvas) ═══════════════════
+   Замысел Марка 06.09.2026: команда живых цифр 1–9 с глазками и улыбкой,
+   чтобы ударить — надо решить пример; ошибся — бьют тебя. Волны 1–7,
+   100 уровней, каждый 10-й — гигантский босс-цифра. Враги — чёрные цифры. */
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+const rnd = (a,b) => a + Math.random()*(b-a);
+const ri  = (a,b) => Math.floor(rnd(a,b+1));
+const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  DPR = Math.min(devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize', resize); resize();
+
+/* ── 🔢 ГЕРОИ-ЦИФРЫ (цвета — от Марка) ── */
+const HEROES = [
+  { n:1, color:'#e2352f', name:'Единичка', hp:26, abil:{ name:'Тычок',      emoji:'👉', dmg:10, kind:'one',   desc:'Быстрый укол в одного врага' } },
+  { n:2, color:'#15803d', name:'Двойка',   hp:30, abil:{ name:'Дуплет',     emoji:'✌️', dmg:7,  kind:'twice', desc:'Бьёт ДВА раза подряд' } },
+  { n:3, color:'#facc15', name:'Тройка',   hp:28, abil:{ name:'Тройной залп',emoji:'🔱',dmg:6,  kind:'three', desc:'Три снаряда по врагам' } },
+  { n:4, color:'#9333ea', name:'Четвёрка', hp:36, abil:{ name:'Квадрат-щит',emoji:'🛡',dmg:6,  kind:'shield',desc:'Бьёт и ставит щит команде' } },
+  { n:5, color:'#84cc16', name:'Пятёрка',  hp:30, abil:{ name:'Пятерня',    emoji:'💚', dmg:5,  kind:'heal',  desc:'Бьёт и лечит команду' } },
+  { n:6, color:'#8a5a2b', name:'Шестёрка', hp:34, abil:{ name:'Камнепад',   emoji:'🪨', dmg:14, kind:'one',   desc:'Тяжёлый удар по одному' } },
+  { n:7, color:'#2563eb', name:'Семёрка',  hp:30, abil:{ name:'МОЛОТОК',    emoji:'🔨', dmg:16, kind:'hammer',desc:'Прибивает врага молотком!' } },
+  { n:8, color:'#ff5fa2', name:'Восьмёрка',hp:32, abil:{ name:'Вихрь ∞',    emoji:'🌀', dmg:8,  kind:'all',   desc:'Бьёт ВСЕХ врагов сразу' } },
+  { n:9, color:'#f97316', name:'Девятка',  hp:34, abil:{ name:'Девятый вал',emoji:'🌊', dmg:20, kind:'one',   desc:'Самый мощный удар' } },
+];
+const heroByN = n => HEROES.find(h => h.n === n);
+
+/* ── 💾 сохранение ── */
+const SK = 'matshtorm_v1';
+/* 🎚 УРОВНИ СЛОЖНОСТИ (названия придумал Марк 06.09) */
+const DIFFS = [
+  { id:'easy', name:'😊 Легко, как дважды два', подсказки:true,  подсказкаЧерез:6,  урон:0.7,
+    desc:'Иногда игра подсказывает ответ, враги бьют слабее' },
+  { id:'mid',  name:'✏️ Нужно посчитать столбиком', подсказки:true, подсказкаЧерез:14, урон:1.0,
+    desc:'Подсказок мало — придётся считать самому' },
+  { id:'hard', name:'🧮 Без калькулятора не обойтись', подсказки:false, подсказкаЧерез:0, урон:1.6,
+    desc:'Подсказок НЕТ, а враги бьют очень сильно' },
+];
+/* 📖 ЭПИЗОДЫ (сюжет придумал Марк): семью Единички похитили — цифры 2…9 разбросаны по мирам.
+   Каждые 10 уровней — новый эпизод и новый родственник в команде. */
+const EPISODES = [
+  { from:1,  to:10,  name:'Цифровая семья',        desc:'Единичку оставили одну — её родных похитили. Пора искать!' },
+  { from:11, to:20,  name:'Лес умножения',         desc:'В чаще живёт Двойка… и первые злые множители' },
+  { from:21, to:30,  name:'Пещера деления',        desc:'Тройка застряла в тёмной пещере, где всё делится пополам' },
+  { from:31, to:40,  name:'Замок уравнений',       desc:'Четвёрку заперли за дверью с загадкой «? · 5 = 40»' },
+  { from:41, to:50,  name:'Река дробей',           desc:'Пятёрку унесло течением, где числа ломаются на части' },
+  { from:51, to:60,  name:'Гора остатков',         desc:'Шестёрка на вершине, где после деления что-то остаётся' },
+  { from:61, to:70,  name:'Город скобок',          desc:'Семёрка с молотком чинит мосты между скобками' },
+  { from:71, to:80,  name:'Ледяные степени',       desc:'Восьмёрка замёрзла там, где числа растут в квадрате' },
+  { from:81, to:90,  name:'Пустыня больших чисел', desc:'Девятка идёт по бескрайним сотням и тысячам' },
+  { from:91, to:100, name:'Логово Десятки',        desc:'Все в сборе! Впереди двойник и гигантская Десятка' },
+];
+const эпизод = L => EPISODES.find(e => L >= e.from && L <= e.to) || EPISODES[0];
+let save = { level:1, best:1, unlocked:[1], wins:0, solved:0, errors:0, coins:0, up:{}, diff:0 };
+const diff = () => DIFFS[save.diff | 0] || DIFFS[0];
+try { const r = JSON.parse(localStorage.getItem(SK)||'null'); if (r) save = Object.assign(save, r); } catch(_){}
+const saveNow = () => { try { localStorage.setItem(SK, JSON.stringify(save)); } catch(_){} };
+
+/* ── 🔊 звук ── */
+const Snd = { ctx:null,
+  init(){ if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); },
+  tone(f,d,t='sine',v=0.16,to){ if(!this.ctx) return; const C=this.ctx,o=C.createOscillator(),g=C.createGain();
+    o.type=t; o.frequency.value=f; if(to) o.frequency.linearRampToValueAtTime(to, C.currentTime+d);
+    g.gain.setValueAtTime(v,C.currentTime); g.gain.exponentialRampToValueAtTime(0.001,C.currentTime+d);
+    o.connect(g); g.connect(C.destination); o.start(); o.stop(C.currentTime+d); },
+  hit(){ this.tone(180,0.18,'square',0.2,80); },
+  hammer(){ this.tone(120,0.3,'square',0.28,50); setTimeout(()=>this.tone(90,0.25,'sawtooth',0.2,40),80); },
+  good(){ [660,880,1170].forEach((f,i)=>setTimeout(()=>this.tone(f,0.16,'triangle',0.18),i*70)); },
+  bad(){ this.tone(200,0.4,'sawtooth',0.22,90); },
+  win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'triangle',0.2),i*130)); },
+  lose(){ [400,320,250,180].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'sawtooth',0.18),i*150)); },
+  key(){ this.tone(760,0.05,'square',0.08); },
+  /* 🎵 МУЗЫКА (просьба Марка): бой, раздумье и грозная тема босса.
+     Всё синтезом — три слоя: мелодия, бас, ритм. */
+  musI:null, тема:null,
+  music(name){
+    if (this.тема === name) return;
+    this.тема = name;
+    if (this.musI) { clearInterval(this.musI); this.musI = null; }
+    if (!name) return;
+    this.init(); if (!this.ctx) return;
+    const T = {
+      // ⚔️ бой: бодрый марш
+      fight: { темп:150, мел:[523,0,659,0,784,659,523,0, 587,0,698,0,880,698,587,0,
+                              523,0,659,784,1047,0,784,0, 659,587,523,0,392,0,523,0],
+               бас:[131,131,98,98,110,110,131,131], v:0.05 },
+      // 🧠 раздумье: спокойная, пока решаешь пример
+      think:{ темп:300, мел:[440,0,0,0,523,0,0,0, 587,0,0,0,523,0,0,0,
+                              494,0,0,0,440,0,0,0, 392,0,0,0,440,0,0,0],
+               бас:[110,110,98,98,87,87,98,98], v:0.035 },
+      // 👹 босс: тяжёлая и тревожная
+      boss: { темп:120, мел:[196,0,196,233,262,0,233,196, 175,0,175,208,233,0,208,175,
+                              196,233,262,311,349,311,262,233, 196,0,0,0,147,0,0,0],
+               бас:[65,65,73,73,62,62,58,58], v:0.075 },
+    }[name];
+    if (!T) return;
+    let step = 0, self = this;
+    this.musI = setInterval(() => {
+      const s = step % 32;
+      const f = T.мел[s];
+      if (f) self.tone(f, name === 'think' ? 0.4 : 0.16, name === 'boss' ? 'sawtooth' : 'square', T.v);
+      if (s % 4 === 0) self.tone(T.бас[(step>>2) % 8], 0.34, 'triangle', T.v*1.5);
+      if (name !== 'think' && s % 2 === 0) self.tone(90 + Math.random()*40, 0.05, 'square', T.v*0.5);
+      if (name === 'boss' && s % 8 === 0) self.tone(55, 0.5, 'sine', 0.12);   // гулкий удар
+      step++;
+    }, T.темп);
+  },
+  stopMusic(){ this.тема = null; if (this.musI) { clearInterval(this.musI); this.musI = null; } },
+};
+
+/* ── 🎨 РИСОВАНИЕ ЖИВОЙ ЦИФРЫ (с глазками и улыбкой) ── */
+function drawDigit(x, y, size, digit, color, opt = {}) {
+  const { mood = 'happy', shake = 0, flash = 0, scale = 1, dead = false } = opt;
+  ctx.save();
+  ctx.translate(x + (shake ? rnd(-shake, shake) : 0), y);
+  ctx.scale(scale, scale);
+  if (dead) ctx.globalAlpha = 0.35;
+  // тень под цифрой
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(0, size*0.62, size*0.42, size*0.12, 0, 0, 7); ctx.fill();
+  // сам глиф
+  ctx.font = '900 ' + size + 'px "Arial Black", Impact, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = size*0.16; ctx.strokeStyle = 'rgba(0,0,0,.55)';
+  ctx.strokeText(String(digit), 0, 0);
+  if (opt.color2 && flash <= 0) {
+    // 🎨 СЛИТАЯ цифра: левая половина — цвет одного родителя, правая — другого (замысел Марка)
+    const w2 = size*1.2, h2 = size*1.6;
+    ctx.save(); ctx.beginPath(); ctx.rect(-w2, -h2/2, w2, h2); ctx.clip();
+    ctx.fillStyle = color;      ctx.fillText(String(digit), 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(0, -h2/2, w2, h2); ctx.clip();
+    ctx.fillStyle = opt.color2; ctx.fillText(String(digit), 0, 0); ctx.restore();
+  } else {
+    ctx.fillStyle = flash > 0 ? '#ffffff' : color;
+    ctx.fillText(String(digit), 0, 0);
+  }
+  // блик сверху
+  ctx.globalAlpha *= 0.25; ctx.fillStyle = '#fff';
+  ctx.fillText(String(digit), 0, -size*0.06); ctx.globalAlpha /= 0.25;
+  // 👀 глазки
+  const ex = size*0.17, ey = -size*0.06, er = size*0.115;
+  for (const s of [-1, 1]) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(s*ex, ey, er, er*1.12, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = size*0.02; ctx.stroke();
+    if (mood === 'dead') {                       // крестики вместо глаз
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = size*0.035;
+      ctx.beginPath(); ctx.moveTo(s*ex-er*0.6, ey-er*0.6); ctx.lineTo(s*ex+er*0.6, ey+er*0.6);
+      ctx.moveTo(s*ex+er*0.6, ey-er*0.6); ctx.lineTo(s*ex-er*0.6, ey+er*0.6); ctx.stroke();
+    } else {
+      const look = mood === 'angry' ? 0.25 : 0;
+      ctx.fillStyle = '#141018';
+      ctx.beginPath(); ctx.arc(s*ex + er*0.22, ey + er*0.15 + look*er, er*0.52, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff';                    // блик в зрачке
+      ctx.beginPath(); ctx.arc(s*ex + er*0.05, ey - er*0.2, er*0.18, 0, 7); ctx.fill();
+    }
+  }
+  if (mood === 'angry') {                        // сердитые брови
+    ctx.strokeStyle = '#141018'; ctx.lineWidth = size*0.045; ctx.lineCap = 'round';
+    for (const s of [-1, 1]) { ctx.beginPath();
+      ctx.moveTo(s*ex - s*er*0.9, ey - er*1.5); ctx.lineTo(s*ex + s*er*0.7, ey - er*0.85); ctx.stroke(); }
+  }
+  // 😀 рот
+  ctx.strokeStyle = '#141018'; ctx.lineWidth = size*0.05; ctx.lineCap = 'round';
+  ctx.beginPath();
+  const my = size*0.17;
+  if (mood === 'happy')      ctx.arc(0, my - size*0.04, size*0.13, 0.15*Math.PI, 0.85*Math.PI);
+  else if (mood === 'angry') ctx.arc(0, my + size*0.10, size*0.13, 1.15*Math.PI, 1.85*Math.PI);
+  else if (mood === 'hurt')  { ctx.ellipse(0, my, size*0.09, size*0.075, 0, 0, 7); }
+  else                       ctx.arc(0, my + size*0.10, size*0.12, 1.15*Math.PI, 1.85*Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ── ✨ частицы ── */
+let parts = [];
+function burst(x, y, color, n = 18, power = 1) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, 6.28), s = rnd(60, 260)*power;
+    parts.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s - 60, r:rnd(3,8), color, t:0, life:rnd(0.4,0.9) });
+  }
+}
+function updateParts(dt) {
+  for (let i = parts.length-1; i >= 0; i--) {
+    const p = parts[i]; p.t += dt;
+    p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 900*dt;
+    if (p.t > p.life) parts.splice(i,1);
+  }
+}
+function drawParts() {
+  for (const p of parts) {
+    ctx.globalAlpha = Math.max(0, 1 - p.t/p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+/* всплывающие числа урона */
+let pops = [];
+function pop(x, y, text, color) { pops.push({ x, y, text, color, t:0 }); }
+function updatePops(dt) { for (let i = pops.length-1; i >= 0; i--) { const p = pops[i]; p.t += dt;
+  p.y -= 60*dt; if (p.t > 1.1) pops.splice(i,1); } }
+function drawPops() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const p of pops) {
+    ctx.globalAlpha = Math.max(0, 1 - p.t/1.1);
+    ctx.font = '900 ' + Math.round(H*0.036) + 'px "Arial Black", sans-serif';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.6)';
+    ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ── 🧮 ГЕНЕРАТОР ЗАДАЧ (темы открываются по уровням) ── */
+function makeTask(level) {
+  const L = level;
+  const темы = ['add'];
+  if (L >= 4)  темы.push('sub');
+  if (L >= 10) темы.push('mul');
+  if (L >= 18) темы.push('div');
+  if (L >= 30) темы.push('eq');       // уравнения: 5 · ? = 35
+  if (L >= 45) темы.push('frac');     // доли: 1/2 от 18
+  if (L >= 60) темы.push('mix');      // два действия
+  const t = темы[ri(0, темы.length-1)];
+  const k = clamp(1 + Math.floor(L/8), 1, 12);   // «крупность» чисел растёт
+  let text, ans;
+  if (t === 'add')      { const a = ri(2, 9*k), b = ri(2, 9*k); text = a+' + '+b; ans = a+b; }
+  else if (t === 'sub') { const a = ri(5, 9*k+8), b = ri(1, a); text = a+' − '+b; ans = a-b; }
+  else if (t === 'mul') { const a = ri(2, Math.min(9, 2+k)), b = ri(2, Math.min(12, 3+k)); text = a+' × '+b; ans = a*b; }
+  else if (t === 'div') { const b = ri(2, Math.min(9, 2+k)), ans2 = ri(2, Math.min(12, 3+k)); text = (b*ans2)+' ÷ '+b; ans = ans2; }
+  else if (t === 'eq')  { const a = ri(2, Math.min(9, 3+k)), x = ri(2, Math.min(12, 4+k));
+                          text = a+' · ? = '+(a*x); ans = x; }
+  else if (t === 'frac'){ const d = [2,3,4,5][ri(0,3)], x = d*ri(2, 3+k);
+                          text = '1/'+d+' от '+x; ans = x/d; }
+  else                  { const a = ri(2, 9), b = ri(2, 9), c = ri(2, 9);
+                          text = a+' × '+b+' + '+c; ans = a*b+c; }
+  return { text: text + ' = ?', ans };
+}
+
+/* ── ⚔️ СОСТОЯНИЕ БОЯ ── */
+let state = 'menu';           // menu | choosing | task | anim | march | result
+let level = 1, waveIdx = 0, waves = [], team = [], foes = [], shield = 0;
+let picked = null, task = null, typed = '', bigT = 0, shakeT = 0;
+let anim = null;              // текущая анимация удара
+let отряд = null;             // выбранные цифры перед боем
+let плюсики = 0;              // ➕ бонусы на слияние (падают после волн)
+let drag = null;              // перетаскивание цифры по полю
+let слияние = null;           // ожидание подтверждения {a,b}
+let марш = 0;                 // 🚶 поход по полянке между волнами (секунды)
+let подсказка = null;         // 💡 текст подсказки на этот пример
+
+function волныДляУровня(L) {
+  if (L % 10 === 0) return [ 'boss' ];                       // босс-уровень
+  const n = clamp(1 + Math.floor(L/14) + ri(0,2), 1, 7);     // от 1 до 7 волн
+  return Array.from({length:n}, (_,i) => 1 + Math.floor((L + i*2)/12));
+}
+/* 🔢 боец команды. Может быть СЛИТЫМ (два цвета — половинки родителей, замысел Марка) */
+function makeFighter(n, colorA, colorB, name, abil, hp) {
+  const h = heroByN(n);
+  const base = h || { n, color:colorA, name:name||('Число '+n), hp:hp||(20+n*3),
+                      abil: abil || { name:'Удар', emoji:'💥', dmg:8+n, kind:'one', desc:'Мощный удар' } };
+  return { ...base, n, color: colorA || base.color, color2: colorB || null,
+           name: name || base.name, abil: abil || base.abil,
+           maxhp: hp || base.hp, cur: hp || base.hp,
+           mood:'happy', shake:0, flash:0, x:0, y:0, size:0, dead:false };
+}
+function создатьКоманду() {
+  const выбор = (отряд && отряд.length) ? отряд : save.unlocked.slice(0, 5);
+  team = выбор.map(n => makeFighter(n));
+}
+function создатьВолну(w) {
+  foes = [];
+  if (w === 'boss') {                                        // 🎃 гигантский босс-цифра
+    const num = level/10;                                     // 10-й → 1, 100-й → 10
+    const hp = 60 + num*38;
+    foes.push({ n:num, boss:true, color:'#111114', maxhp:hp, cur:hp, dmg:9+num, mood:'angry',
+                shake:0, flash:0, x:0, y:0, size:0, dead:false });
+    return;
+  }
+  const кол = clamp(1 + Math.floor(level/16) + ri(0, 2), 1, 4);
+  for (let i = 0; i < кол; i++) {
+    const hp = 14 + w*7 + ri(0, 6);
+    foes.push({ n:ri(1,9), color:'#111114', maxhp:hp, cur:hp, dmg:4 + Math.floor(level/9), mood:'angry',
+                shake:0, flash:0, x:0, y:0, size:0, dead:false });
+  }
+}
+function startLevel(L) {
+  level = L; waveIdx = 0; shield = 0; parts = []; pops = [];
+  плюсики = 1; drag = null; слияние = null; марш = 0;
+  $('mergeAsk').classList.remove('show');
+  waves = волныДляУровня(L);
+  создатьКоманду(); создатьВолну(waves[0]); обновитьПлюсы();
+  Snd.init();
+  showScreen('');
+  document.body.classList.add('fight');
+  $('hud').classList.remove('hidden');
+  const эп = эпизод(L);
+  bigMsg((L % 10 === 0 ? '👹 БОСС!\n' : '') + '📖 ' + эп.name + '\nУРОВЕНЬ ' + L, 2.4);
+  if (L === эп.from) toast('📖 ' + эп.name + ': ' + эп.desc);
+  Snd.music(L % 10 === 0 ? 'boss' : 'fight');
+  goChoose();
+  updateHud();
+}
+function updateHud() {
+  $('hudLeft').textContent = '📖 ' + эпизод(level).name + ' · ⭐ ' + level +
+    (waves[waveIdx] === 'boss' ? ' · 👹 БОСС' : ' · 🌊 ' + (waveIdx+1) + '/' + waves.length);
+  $('hudRight').textContent = '✅ ' + save.solved + ' ❌ ' + save.errors + ' 💰 ' + (save.coins|0);
+}
+function bigMsg(t, dur = 2) { $('big').textContent = t; $('big').style.opacity = 1; bigT = dur; }
+function toast(t) { $('toast').textContent = t; $('toast').classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>$('toast').classList.remove('show'), 2400); }
+function showScreen(id) {
+  ['menu','team','levels','result','squad','diffScr','story'].forEach(s => $(s).classList.toggle('hidden', s !== id));
+  if (id) { document.body.classList.remove('fight','choosing'); $('hud').classList.add('hidden'); }
+}
+
+/* ── выбор героя → способность → задача ── */
+function goChoose() {
+  state = 'choosing'; picked = null;
+  document.body.classList.add('choosing');
+  $('chooseTitle').textContent = 'Кто атакует?';
+  const row = $('chooseRow'); row.innerHTML = '';
+  team.forEach((h, i) => {
+    const el = document.createElement('div');
+    el.className = 'card' + (h.dead ? ' dead' : '');
+    el.innerHTML = '<div class="big" style="color:' + h.color + '">' + h.n + '</div>' +
+      '<div class="nm">' + h.name + '</div>' +
+      '<div class="ds">' + h.abil.emoji + ' ' + h.abil.name + '<br>' + h.cur + '/' + h.maxhp + ' ❤️</div>';
+    el.onclick = () => { if (h.dead) return; picked = h; Snd.init(); Snd.key(); goTask(); };
+    row.appendChild(el);
+  });
+}
+function goTask() {
+  state = 'task'; typed = '';
+  document.body.classList.remove('choosing');
+  Snd.music('think');                      // 🧠 пока решаешь — спокойная тема
+  task = makeTask(level);
+  $('task').textContent = picked.abil.emoji + ' ' + picked.name + ': ' + task.text;
+  $('answer').textContent = '_';
+  // 💡 ПОДСКАЗКА по сложности: на лёгком часто, на среднем редко, на сложном — никогда
+  const d = diff();
+  подсказка = null;
+  if (d.подсказки && (save.solved % d.подсказкаЧерез === d.подсказкаЧерез - 1 || Math.random() < (d.id === 'easy' ? 0.25 : 0.08))) {
+    const a = task.ans;
+    подсказка = (d.id === 'easy')
+      ? '💡 Подсказка: ответ ' + a                                   // прямо говорим
+      : '💡 Подсказка: ответ между ' + Math.max(0, a-3) + ' и ' + (a+3);
+    toast(подсказка);
+  }
+  updateHud();
+}
+function typeKey(k) {
+  if (state !== 'task') return;
+  Snd.init(); Snd.key();
+  if (k === 'del') typed = typed.slice(0, -1);
+  else if (k === 'ok') { if (typed.length) checkAnswer(); return; }
+  else if (typed.length < 5) typed += k;
+  $('answer').textContent = typed.length ? typed : '_';
+}
+function checkAnswer() {
+  const ok = Number(typed) === task.ans;
+  if (ok) { save.solved++; Snd.good(); heroAttack(); }
+  else    { save.errors++; Snd.bad(); bigMsg('❌ ' + typed + ' — неверно!\nправильно: ' + task.ans, 2.2); foesAttack(); }
+  saveNow();
+}
+
+/* ── атака героя (по способности) ── */
+function heroAttack() {
+  state = 'anim';
+  Snd.music(waves[waveIdx] === 'boss' ? 'boss' : 'fight');   // ⚔️ снова бой
+  const h = picked, a = h.abil;
+  const живые = foes.filter(f => !f.dead);
+  if (!живые.length) { nextWave(); return; }
+  let цели = [живые[0]];
+  if (a.kind === 'all')   цели = живые.slice();
+  if (a.kind === 'three') цели = живые.slice(0, 3);
+  const ударов = a.kind === 'twice' ? 2 : 1;
+  h.mood = 'angry';
+  anim = { t:0, dur: a.kind === 'hammer' ? 0.75 : 0.5, kind:a.kind, from:h, to:цели[0] };
+  let задержка = 0;
+  for (let u = 0; u < ударов; u++) {
+    цели.forEach((f, i) => {
+      setTimeout(() => {
+        if (f.dead) return;
+        const урон = a.dmg + ri(0, 3) + Math.floor(level/12);
+        f.cur -= урон; f.flash = 0.25; f.shake = 10;
+        burst(f.x, f.y, h.color, a.kind === 'hammer' ? 34 : 18, a.kind === 'hammer' ? 1.6 : 1);
+        pop(f.x, f.y - f.size*0.6, '-' + урон, '#ffe066');
+        a.kind === 'hammer' ? Snd.hammer() : Snd.hit();
+        if (a.kind === 'hammer') shakeT = 0.4;
+        if (f.cur <= 0) { f.cur = 0; f.dead = true; f.mood = 'dead'; burst(f.x, f.y, '#888', 26, 1.2); }
+      }, задержка);
+      задержка += 130;
+    });
+  }
+  if (a.kind === 'heal')   setTimeout(() => { team.forEach(t => { if (!t.dead) {
+      t.cur = Math.min(t.maxhp, t.cur + 8); pop(t.x, t.y - t.size*0.6, '+8', '#4ade80'); burst(t.x, t.y, '#4ade80', 12); } });
+      toast('💚 Пятёрка подлечила команду!'); }, 200);
+  if (a.kind === 'shield') { shield = 2; toast('🛡 Щит на 2 удара!'); }
+  setTimeout(() => {
+    h.mood = 'happy';
+    if (foes.every(f => f.dead)) nextWave(); else goChoose();
+  }, Math.max(700, задержка + 350));
+}
+/* ── атака врагов (после ошибки) ── */
+function foesAttack() {
+  state = 'anim';
+  const живыеВраги = foes.filter(f => !f.dead);
+  const живыеГерои = team.filter(h => !h.dead);
+  if (!живыеВраги.length) { nextWave(); return; }
+  if (shield > 0) { shield--; toast('🛡 Щит поглотил удар! Осталось: ' + shield);
+    setTimeout(goChoose, 900); return; }
+  let задержка = 0;
+  живыеВраги.forEach(f => {
+    setTimeout(() => {
+      const цель = живыеГерои.filter(h => !h.dead)[ri(0, Math.max(0, живыеГерои.filter(h=>!h.dead).length-1))];
+      if (!цель) return;
+      const урон = Math.max(1, Math.round((f.dmg + ri(0, 2)) * diff().урон));   // 🎚 сложность
+      цель.cur -= урон; цель.flash = 0.25; цель.shake = 10; цель.mood = 'hurt';
+      burst(цель.x, цель.y, '#ef4444', 16);
+      pop(цель.x, цель.y - цель.size*0.6, '-' + урон, '#ef4444');
+      Snd.hit(); shakeT = 0.25;
+      setTimeout(() => { if (!цель.dead) цель.mood = 'happy'; }, 500);
+      if (цель.cur <= 0) { цель.cur = 0; цель.dead = true; цель.mood = 'dead';
+        burst(цель.x, цель.y, '#888', 24, 1.2); toast('💀 ' + цель.name + ' выбыла!'); }
+    }, задержка);
+    задержка += 260;
+  });
+  setTimeout(() => {
+    if (team.every(h => h.dead)) loseLevel(); else goChoose();
+  }, задержка + 450);
+}
+function nextWave() {
+  waveIdx++;
+  if (waveIdx >= waves.length) { winLevel(); return; }
+  // 🎁 за пройденную волну иногда падает бонус-плюсик
+  if (Math.random() < 0.65) { плюсики++; обновитьПлюсы();
+    toast('➕ БОНУС! Наведи цифру на цифру, чтобы сложить их'); }
+  // 🚶 команда идёт по полянке к следующей волне (замысел Марка)
+  state = 'march'; марш = 2.0;
+  document.body.classList.remove('choosing');
+  foes = [];
+  bigMsg('🚶 ИДЁМ ДАЛЬШЕ…\nволна ' + (waveIdx+1) + ' из ' + waves.length, 1.8);
+  Snd.tone(520, 0.12, 'triangle', 0.12);
+  setTimeout(() => {
+    if (state !== 'march') return;
+    создатьВолну(waves[waveIdx]); updateHud();
+    bigMsg('🌊 ВОЛНА ' + (waveIdx+1), 1.2);
+    goChoose();
+  }, 2000);
+}
+/* ═══ 📖 ДИАЛОГИ-КНИЖКА: встреча со спасённой цифрой (сюжет Марка) ═══ */
+const ВСТРЕЧИ = {
+  2: [ ['2','Ты что здесь делаешь?!'],
+       ['1','Меня больше удивляет, что здесь делаешь ТЫ — тебя же похитили!'],
+       ['2','Я успела вырваться из лап опасного злодея. Еле чудом спаслась.'],
+       ['2','Я знаю, куда он пошёл. Покажу дорогу!'] ],
+  3: [ ['3','Ой… вы меня нашли! Я пряталась в пещере от множителей.'],
+       ['1','Мы ищем всю семью. Пойдёшь с нами?'],
+       ['3','Втроём мы сильнее! Я умею бить тройным залпом.'] ],
+  4: [ ['4','Меня заперли за дверью с загадкой. Я её решила — и вот я тут!'],
+       ['1','Ты цела?'], ['4','Даже щит с собой прихватила. Прикрою всех!'] ],
+  5: [ ['5','Меня унесло рекой дробей… было мокро и страшно.'],
+       ['5','Зато я научилась лечить! Больше никто из нас не пропадёт.'] ],
+  6: [ ['6','Я сидела на горе остатков и считала камни.'],
+       ['6','Зато теперь мой камнепад никому мало не покажется!'] ],
+  7: [ ['7','Ребята! Я чинила мосты между скобками. Молоток при мне 🔨'],
+       ['1','С таким молотком нам никакой злодей не страшен!'] ],
+  8: [ ['8','Б-р-р, я примёрзла к ледяной степени…'],
+       ['8','Согрелась — и готова крутить вихрь по всем врагам сразу!'] ],
+  9: [ ['9','Я шла через пустыню больших чисел и почти дошла сама.'],
+       ['9','Теперь мы все вместе. Девятый вал сметёт кого угодно!'] ],
+};
+let сцена = null, сценаI = 0, послеСцены = null;
+function showStory(n, дальше) {
+  const реплики = ВСТРЕЧИ[n];
+  if (!реплики) { дальше && дальше(); return; }
+  сцена = реплики; сценаI = 0; послеСцены = дальше;
+  state = 'story'; Snd.stopMusic();
+  showScreen('story'); рисоватьРеплику();
+}
+function рисоватьРеплику() {
+  const [кто, текст] = сцена[сценаI];
+  const h = heroByN(Number(кто));
+  $('storyArt').textContent = кто;
+  $('storyArt').style.color = h ? h.color : '#fff';
+  $('storyWho').textContent = (h ? h.name : 'Цифра ' + кто) + ':';
+  $('storyText').textContent = текст;
+  Snd.init(); Snd.tone(600 + Number(кто)*40, 0.08, 'triangle', 0.1);
+}
+$('storyNext').onclick = () => {
+  сценаI++;
+  if (сценаI < сцена.length) { рисоватьРеплику(); return; }
+  сцена = null;
+  const f = послеСцены; послеСцены = null;
+  if (f) f(); else { state = 'menu'; showScreen('menu'); }
+};
+
+function winLevel() {
+  state = 'result'; Snd.stopMusic(); Snd.win();
+  save.wins++;
+  const монеты = 10 + (level % 10 === 0 ? 40 : 0);      // 💰 10 за победу, 50 за босса
+  save.coins = (save.coins | 0) + монеты;
+  const былоОткрыто = save.unlocked.length;
+  // 🎁 спасаем родню: после 1-го уровня — Двойка, после боссов — обязательно,
+  // а на обычных уровнях цифра может найтись СЛУЧАЙНО (просьба Марка)
+  const след = save.unlocked.length + 1;
+  const пораСпасать = (level === 1) || (level % 10 === 0) || (Math.random() < 0.3);
+  const спасли = пораСпасать && след <= 9 && !save.unlocked.includes(след);
+  if (спасли) save.unlocked.push(след);
+  if (level >= save.level) save.level = Math.min(100, level + 1);
+  save.best = Math.max(save.best, level);
+  saveNow();
+  $('resIcon').textContent = level % 10 === 0 ? '👑' : '🏆';
+  $('resTitle').textContent = level % 10 === 0 ? 'БОСС ПОВЕРЖЕН!' : 'ПОБЕДА!';
+  let txt = 'Уровень ' + level + ' пройден! Волн: ' + waves.length + '.\n💰 +' + монеты +
+    ' монет (всего: ' + save.coins + ')';
+  if (save.unlocked.length > былоОткрыто)
+    txt += '\n🎉 В команду пришла ' + heroByN(save.unlocked[save.unlocked.length-1]).name + '!';
+  if (level >= 100) txt = '🏁 ТЫ ПРОШЁЛ ВСЕ 100 УРОВНЕЙ! Гигантская Десятка повержена!';
+  $('resText').textContent = txt;
+  // 📖 сначала диалог со спасённой цифрой, потом итог уровня
+  if (спасли) showStory(след, () => { state = 'result'; showScreen('result'); });
+  else showScreen('result');
+}
+function loseLevel() {
+  state = 'result'; Snd.stopMusic(); Snd.lose();
+  $('resIcon').textContent = '💀';
+  $('resTitle').textContent = 'КОМАНДА ПАЛА';
+  $('resText').textContent = 'Все цифры выбыли на уровне ' + level + '. Уровень придётся пройти заново!';
+  showScreen('result');
+}
+
+/* ═══ ➕ СЛИЯНИЕ ЦИФР: тащишь одну цифру на другую → «объединить?» (замысел Марка) ═══ */
+function героПод(x, y) {
+  return team.find(h => !h.dead && Math.hypot(h.x - x, h.y - y) < h.size*0.62);
+}
+cv.addEventListener('pointerdown', e => {
+  if (state !== 'choosing' || слияние) return;
+  const h = героПод(e.clientX, e.clientY);
+  if (!h) return;
+  drag = { hero:h, x:e.clientX, y:e.clientY, ox:h.x, oy:h.y, moved:false };
+});
+addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) drag.moved = true;
+  drag.x = e.clientX; drag.y = e.clientY;
+});
+addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (!d.moved) return;                                    // просто тап — не тащил
+  const цель = team.find(h => h !== d.hero && !h.dead &&
+    Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.size*0.7);
+  if (!цель) { пересобратьПорядок(d.hero, e.clientX); return; }   // просто переставили в строю
+  if (плюсики <= 0) { toast('➕ Нужен бонус «плюсик» — их дают за волны'); return; }
+  const сумма = d.hero.n + цель.n;
+  if (сумма > 18) { toast('Слишком большое число!'); return; }
+  слияние = { a:d.hero, b:цель };
+  $('mergeText').textContent = d.hero.n + ' + ' + цель.n + ' = ' + сумма;
+  $('mergeAsk').classList.add('show');
+});
+function пересобратьПорядок(h, x) {                        // 🧩 расстановка цифр на поле
+  const i = team.indexOf(h);
+  team.splice(i, 1);
+  let вставить = team.length;
+  for (let k = 0; k < team.length; k++) if (x < team[k].x) { вставить = k; break; }
+  team.splice(вставить, 0, h);
+  Snd.init(); Snd.key();
+}
+/* ✨ ЭФФЕКТНОЕ СЛИЯНИЕ (просьба Марка): цифры срываются с мест, кружатся друг вокруг друга
+   всё быстрее, сходятся в одну точку — вспышка — и появляется новая двухцветная цифра. */
+let fuse = null;
+function сделатьСлияние() {
+  const { a, b } = слияние; слияние = null;
+  $('mergeAsk').classList.remove('show');
+  плюсики--; обновитьПлюсы();
+  state = 'anim';
+  document.body.classList.remove('choosing');
+  const cx = (a.x + b.x)/2, cy = (a.y + b.y)/2 - 20;
+  const r0 = Math.max(50, Math.hypot(a.x - b.x, a.y - b.y)/2);
+  fuse = { a, b, cx, cy, r0, t:0, dur:1.7, n:a.n + b.n };
+  Snd.tone(300, 0.5, 'triangle', 0.16, 900);
+  bigMsg('✨ СЛИЯНИЕ!', 1.4);
+}
+function завершитьСлияние() {
+  const { a, b, cx, cy, n } = fuse; fuse = null;
+  const сильный = a.abil.dmg >= b.abil.dmg ? a : b;
+  const новый = makeFighter(n, a.color, b.color, 'Число ' + n,
+    { name:'Супер-'+сильный.abil.name, emoji:'✨', dmg: сильный.abil.dmg + Math.floor(n/2),
+      kind: сильный.abil.kind, desc:'Слияние ' + a.n + ' и ' + b.n },
+    a.maxhp + b.maxhp);
+  новый.cur = Math.max(1, a.cur + b.cur);
+  новый.x = cx; новый.y = cy; новый.появление = 0;
+  const i = Math.min(team.indexOf(a), team.indexOf(b));
+  team = team.filter(h => h !== a && h !== b);
+  team.splice(i, 0, новый);
+  // 💥 вспышка и разлёт частиц обоих цветов
+  burst(cx, cy, a.color, 40, 1.8); burst(cx, cy, b.color, 40, 1.8); burst(cx, cy, '#ffffff', 30, 2.2);
+  pop(cx, cy - 60, '= ' + n, '#ffe066');
+  shakeT = 0.35; Snd.good(); Snd.tone(1200, 0.4, 'triangle', 0.2, 300);
+  bigMsg('✨ ПОЛУЧИЛАСЬ ' + n + '!', 2);
+  toast('Двухцветная цифра ' + n + ' — половина от ' + a.n + ', половина от ' + b.n);
+  goChoose();
+}
+function updateFuse(dt) {
+  if (!fuse) return;
+  fuse.t += dt;
+  const k = Math.min(1, fuse.t / fuse.dur);
+  const ease = k*k;                              // ускоряется к концу
+  const угол = ease * 26;                        // оборотов всё больше
+  const r = fuse.r0 * (1 - ease*0.97);           // сходятся в точку
+  const s = 1 - ease*0.35;
+  fuse.a.x = fuse.cx + Math.cos(угол) * r;       fuse.a.y = fuse.cy + Math.sin(угол) * r * 0.55;
+  fuse.b.x = fuse.cx + Math.cos(угол + Math.PI)*r; fuse.b.y = fuse.cy + Math.sin(угол + Math.PI)*r*0.55;
+  fuse.a.scaleK = fuse.b.scaleK = s;
+  if (Math.random() < dt*40) {                   // искры по орбите
+    burst(fuse.a.x, fuse.a.y, fuse.a.color, 2, 0.4);
+    burst(fuse.b.x, fuse.b.y, fuse.b.color, 2, 0.4);
+  }
+  if (k >= 1) завершитьСлияние();
+}
+function обновитьПлюсы() { $('plusHud').textContent = '➕ ' + плюсики; }
+$('mergeYes').onclick = () => { if (слияние) сделатьСлияние(); };
+$('mergeNo').onclick  = () => { слияние = null; $('mergeAsk').classList.remove('show'); };
+
+/* ── расстановка и отрисовка бойцов ── */
+function layout() {
+  const низ = document.body.classList.contains('choosing') ? H*0.36 : H*0.30;
+  const полеН = H - низ;
+  const yГ = полеН*0.66, yВ = полеН*0.40;
+  const sГ = clamp(Math.min(W, H)*0.13, 44, 108);
+  team.forEach((h, i) => {
+    const n = team.length;
+    h.size = sГ;
+    if (fuse && (h === fuse.a || h === fuse.b)) return;      // ✨ во время слияния позиции ведёт эффект
+    if (drag && drag.hero === h && drag.moved) { h.x = drag.x; h.y = drag.y; return; }
+    h.x = W*0.06 + (W*0.40) * ((i + 0.5)/n);
+    h.y = yГ + Math.sin(perf*1.6 + i)*4;
+  });
+  foes.forEach((f, i) => {
+    const n = foes.length;
+    f.size = f.boss ? clamp(Math.min(W,H)*0.30, 90, 240) : sГ*0.95;
+    f.x = W*0.56 + (W*0.40) * ((i + 0.5)/n);
+    f.y = (f.boss ? полеН*0.46 : yВ) + Math.sin(perf*1.4 + i*1.3)*5;
+  });
+}
+function drawBar(x, y, w, h, k, color) {
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  ctx.fillRect(x - w/2, y, w, h);
+  ctx.fillStyle = color;
+  ctx.fillRect(x - w/2 + 2, y + 2, Math.max(0, (w-4)*k), h-4);
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(x - w/2, y, w, h);
+}
+function drawScene(dt) {
+  // фон-арена
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#3b1348'); g.addColorStop(0.55, '#26102f'); g.addColorStop(1, '#160a1c');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 🌿 полянка: кустики и трава, во время марша уезжают влево (команда идёт вперёд)
+  if (state === 'march') марш = Math.max(0, марш - dt);
+  const прокрутка = (state === 'march' ? (2.0 - марш) : 0) * 240 + perf*8;
+  for (let i = 0; i < 14; i++) {
+    const bx = ((i*137 + 60) - прокрутка) % (W + 160) ; const x = bx < -80 ? bx + W + 160 : bx;
+    const by = H*0.46 + (i%3)*H*0.045;
+    ctx.fillStyle = i%3 ? 'rgba(60,140,70,.35)' : 'rgba(80,170,90,.3)';
+    ctx.beginPath(); ctx.ellipse(x, by, 26 + (i%4)*8, 12 + (i%3)*4, 0, 0, 7); ctx.fill();
+  }
+  // «пол» арены
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  ctx.beginPath(); ctx.ellipse(W*0.5, H*0.52, W*0.55, H*0.13, 0, 0, 7); ctx.fill();
+  ctx.save();
+  if (shakeT > 0) { ctx.translate(rnd(-6,6), rnd(-6,6)); shakeT -= dt; }
+  layout();
+  // герои
+  team.forEach(h => {
+    h.shake = Math.max(0, h.shake - dt*40); h.flash = Math.max(0, h.flash - dt);
+    if (h.появление !== undefined && h.появление < 1) h.появление = Math.min(1, h.появление + dt*2.4);
+    const рост = h.появление !== undefined ? 0.3 + h.появление*0.7 : 1;
+    drawDigit(h.x, h.y, h.size, h.n, h.color,
+      { mood:h.dead ? 'dead' : h.mood, shake:h.shake, flash:h.flash, dead:h.dead, color2:h.color2,
+        scale:(h.scaleK || 1) * рост });
+    const тащим = drag && drag.hero === h && drag.moved;
+    if (!h.dead && !fuse) drawBar(h.x, h.y + h.size*0.72, h.size*0.95, 9, h.cur/h.maxhp, '#4ade80');
+    if (тащим) {                                     // подсветка цели для слияния
+      const цель = team.find(o => o !== h && !o.dead && Math.hypot(o.x-h.x, o.y-h.y) < o.size*0.7);
+      if (цель) { ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(цель.x, цель.y, цель.size*0.6, 0, 7); ctx.stroke();
+        ctx.fillStyle = '#ffe066'; ctx.textAlign = 'center';
+        ctx.font = '900 ' + Math.round(H*0.03) + 'px "Arial Black", sans-serif';
+        ctx.fillText('+ = ' + (h.n + цель.n), цель.x, цель.y - цель.size*0.8); }
+    }
+  });
+  // враги (чёрные цифры)
+  foes.forEach(f => {
+    f.shake = Math.max(0, f.shake - dt*40); f.flash = Math.max(0, f.flash - dt);
+    drawDigit(f.x, f.y, f.size, f.n, f.color,
+      { mood:f.dead ? 'dead' : 'angry', shake:f.shake, flash:f.flash, dead:f.dead });
+    if (!f.dead) drawBar(f.x, f.y + f.size*0.72, f.size*0.95, f.boss ? 14 : 9, f.cur/f.maxhp, '#ef4444');
+    if (f.boss && !f.dead) {
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '900 ' + Math.round(H*0.028) + 'px "Arial Black", sans-serif';
+      ctx.fillText('👹 БОСС ' + f.n, f.x, f.y + f.size*0.72 + 30);
+    }
+  });
+  // 🛡 щит
+  if (shield > 0) {
+    ctx.strokeStyle = 'rgba(147,51,234,.7)'; ctx.lineWidth = 4;
+    team.filter(h => !h.dead).forEach(h => { ctx.beginPath();
+      ctx.arc(h.x, h.y, h.size*0.62, 0, 7); ctx.stroke(); });
+  }
+  drawParts(); drawPops();
+  ctx.restore();
+}
+
+/* ── цикл ── */
+let perf = 0, last = performance.now();
+function loop() {
+  requestAnimationFrame(loop);
+  const now = performance.now(), dt = Math.min((now - last)/1000, 0.05); last = now; perf += dt;
+  if (bigT > 0) { bigT -= dt; if (bigT <= 0) $('big').style.opacity = 0; }
+  updateParts(dt); updatePops(dt); updateFuse(dt);
+  if (state === 'menu' || state === 'result') {
+    // фон меню: спокойные цифры
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#4a1d5e'); g.addColorStop(1, '#160a1c');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    HEROES.forEach((h, i) => {
+      const x = W*0.5 + Math.cos(perf*0.4 + i*0.7)*W*0.34;
+      const y = H*0.5 + Math.sin(perf*0.5 + i*0.9)*H*0.30;
+      ctx.globalAlpha = 0.30;
+      drawDigit(x, y, Math.min(W,H)*0.09, h.n, h.color, { mood:'happy' });
+      ctx.globalAlpha = 1;
+    });
+    drawParts(); drawPops();
+  } else drawScene(dt);
+}
+loop();
+
+/* ── экраны и кнопки ── */
+function renderTeam() {
+  $('teamSub').textContent = 'Открыто цифр: ' + save.unlocked.length + ' из 9. ' +
+    'Новая цифра приходит после каждого босса!';
+  const g = $('teamGrid'); g.innerHTML = '';
+  HEROES.forEach(h => {
+    const открыт = save.unlocked.includes(h.n);
+    const el = document.createElement('div');
+    el.className = 'tile' + (открыт ? ' on' : ' lock');
+    el.innerHTML = '<div style="font-size:30px;font-weight:900;color:' + (открыт ? h.color : '#666') + '">' +
+      (открыт ? h.n : '🔒') + '</div><h3>' + h.name + '</h3>' +
+      '<p>' + h.abil.emoji + ' <b>' + h.abil.name + '</b><br>' + h.abil.desc + '<br>❤️ ' + h.hp + '</p>';
+    g.appendChild(el);
+  });
+}
+function renderLevels() {
+  $('levelsSub').textContent = '📖 ' + эпизод(save.level).name + '. Пройдено до уровня ' + save.best +
+    '. Любой пройденный уровень можно переиграть! 🔒 между уровнями — клетка со спасённой цифрой.';
+  const g = $('levelsGrid'); g.innerHTML = '';
+  let текЭпизод = null;
+  for (let L = 1; L <= 100; L++) {
+    const открыт = L <= save.level;
+    if (L > save.level + 6 && L % 10 !== 0) continue;      // не рисуем весь хвост
+    const эп = эпизод(L);
+    if (эп !== текЭпизод) {                                // заголовок эпизода
+      текЭпизод = эп;
+      const h = document.createElement('div');
+      h.style.cssText = 'width:100%;text-align:center;font-weight:900;margin:6px 0 2px;color:#ffd0e6';
+      h.textContent = '📖 ' + эп.name + '  (' + эп.from + '–' + эп.to + ')';
+      g.appendChild(h);
+    }
+    const босс = L % 10 === 0;
+    const el = document.createElement('div');
+    el.className = 'tile' + (открыт ? '' : ' lock');
+    el.style.width = '92px';
+    el.innerHTML = '<div style="font-size:22px;font-weight:900">' + (босс ? '👹' : '⚔️') + ' ' + L + '</div>' +
+      '<p>' + (босс ? 'БОСС ' + (L/10) : (открыт ? (L < save.best ? '↻ заново' : 'играть') : '🔒')) + '</p>';
+    if (открыт) el.onclick = () => { Snd.init(); startLevel(L); };
+    g.appendChild(el);
+    // 🔒 КЛЕТКА между уровнями: тут сидит цифра, которую можно спасти (замысел Марка)
+    const номерКлетки = Math.floor(L/10) + 2;              // после 10-го — цифра 3 и т.д.
+    if (босс && номерКлетки <= 9) {
+      const спасена = save.unlocked.includes(номерКлетки);
+      const h2 = heroByN(номерКлетки);
+      const c = document.createElement('div');
+      c.className = 'tile' + (спасена ? ' on' : '');
+      c.style.width = '92px';
+      c.innerHTML = '<div style="font-size:26px;font-weight:900;color:' + (спасена ? h2.color : '#777') + '">' +
+        (спасена ? h2.n : '🔒' + h2.n) + '</div><p>' + (спасена ? 'спасена!' : 'в клетке') + '</p>';
+      g.appendChild(c);
+    }
+  }
+}
+/* ── 🧮 СБОР ОТРЯДА НА КАЛЬКУЛЯТОРЕ (идея Марка 06.09):
+   жмёшь цифру → «В ОТРЯД»; или набираешь 7 + 2 = → в отряд идёт девятка,
+   собранная из семёрки и двойки (двухцветная). Работает и вычитание: 9 − 2 = 7. ── */
+let выбраны = [], calcA = null, calcOp = null, calcB = null;
+function calcText() {
+  if (calcA === null) return '—';
+  return calcA + (calcOp ? ' ' + calcOp + (calcB !== null ? ' ' + calcB : '') : '');
+}
+function calcResult() {
+  if (calcA === null) return null;
+  if (calcOp && calcB !== null) return calcOp === '+' ? calcA + calcB : calcA - calcB;
+  return calcOp ? null : calcA;
+}
+function renderSquad() {
+  if (!выбраны.length) выбраны = (отряд && отряд.length ? отряд : save.unlocked.slice(0, 5)).slice();
+  const disp = $('calcDisp'), keys = $('calcKeys');
+  const обновить = () => {
+    const res = calcResult();
+    disp.textContent = calcText() + (calcOp && calcB !== null ? ' = ' + res : '');
+    $('squadSub').innerHTML = 'Нажми цифру и «В ОТРЯД». Или собери новую: <b>7 + 2 =</b> даст цифру 9! ' +
+      'В отряде ' + выбраны.length + '/5';
+    const row = $('squadRow'); row.innerHTML = '';
+    выбраны.forEach((n, i) => {
+      const h = heroByN(n) || { color:'#8ef0b0', name:'Число ' + n, abil:{ emoji:'✨' } };
+      const el = document.createElement('div'); el.className = 'card';
+      el.innerHTML = '<div class="big" style="color:' + h.color + '">' + n + '</div>' +
+        '<div class="ds">убрать ✖️</div>';
+      el.onclick = () => { выбраны.splice(i, 1); Snd.init(); Snd.key(); обновить(); };
+      row.appendChild(el);
+    });
+  };
+  keys.innerHTML = '';
+  const кнопки = ['7','8','9','+','4','5','6','−','1','2','3','=','⌫','0','ОТРЯД'];
+  кнопки.forEach(k => {
+    const b = document.createElement('div');
+    const цифра = /^[0-9]$/.test(k);
+    const открыта = !цифра || k === '0' || save.unlocked.includes(Number(k));
+    b.className = 'ck' + (k === '+' || k === '−' ? ' op' : '') + (k === '=' ? ' eq' : '') +
+                  (k === 'ОТРЯД' ? ' add' : '') + (открыта ? '' : ' lock');
+    b.textContent = k;
+    b.onpointerdown = e => { e.preventDefault(); Snd.init(); Snd.key();
+      if (цифра) {                                   // ввод числа
+        const n = Number(k);
+        if (calcOp === null) calcA = calcA === null ? n : Math.min(18, calcA*10 + n);
+        else calcB = calcB === null ? n : Math.min(18, calcB*10 + n);
+      }
+      else if (k === '+' || k === '−') { if (calcA !== null) calcOp = k === '+' ? '+' : '−'; }
+      else if (k === '=') {
+        const res = calcResult();
+        if (res === null) { toast('Сначала набери пример'); }
+        else if (res < 1 || res > 18) { toast('Нужно число от 1 до 18'); }
+        else if (выбраны.length >= 5) { toast('В отряде уже 5 цифр'); }
+        else { выбраны.push(res);
+          bigMsg('✨ ' + calcA + ' ' + (calcOp || '') + ' ' + (calcB ?? '') + ' = ' + res, 1.4);
+          Snd.good(); calcA = calcB = null; calcOp = null; }
+      }
+      else if (k === '⌫') { calcA = calcB = null; calcOp = null; }
+      else if (k === 'ОТРЯД') {
+        const res = calcResult();
+        if (res === null || res < 1 || res > 18) { toast('Набери цифру или пример'); }
+        else if (выбраны.length >= 5) { toast('В отряде уже 5 цифр'); }
+        else { выбраны.push(res); Snd.good(); calcA = calcB = null; calcOp = null; }
+      }
+      обновить();
+    };
+    keys.appendChild(b);
+  });
+  обновить();
+}
+$('squadGo').onclick   = () => { if (!выбраны.length) { toast('Возьми хотя бы одну цифру!'); return; }
+  отряд = выбраны.slice(); Snd.init(); startLevel(save.level); };
+$('squadBack').onclick = () => showScreen('menu');
+$('btnPlay').onclick   = () => { Snd.init(); renderSquad(); showScreen('squad'); };
+/* 🎚 выбор сложности */
+function renderDiff() {
+  const g = $('diffGrid'); g.innerHTML = '';
+  DIFFS.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'tile' + (save.diff === i ? ' on' : '');
+    el.style.width = '210px';
+    el.innerHTML = '<h3 style="font-size:14px">' + d.name + '</h3><p>' + d.desc + '</p>';
+    el.onclick = () => { save.diff = i; saveNow(); Snd.init(); Snd.key(); renderDiff();
+      toast('Сложность: ' + d.name); };
+    g.appendChild(el);
+  });
+}
+$('fbLevels').onclick  = () => { Snd.stopMusic(); state = 'menu'; renderLevels(); showScreen('levels'); };
+$('fbMenu').onclick    = () => { Snd.stopMusic(); state = 'menu'; showScreen('menu'); };
+$('btnDiff').onclick   = () => { renderDiff(); showScreen('diffScr'); };
+$('diffBack').onclick  = () => showScreen('menu');
+$('btnTeam').onclick   = () => { renderTeam(); showScreen('team'); };
+$('teamBack').onclick  = () => showScreen('menu');
+$('btnLevels').onclick = () => { renderLevels(); showScreen('levels'); };
+$('levelsBack').onclick= () => showScreen('menu');
+$('resNext').onclick   = () => startLevel($('resTitle').textContent === 'КОМАНДА ПАЛА' ? level : Math.min(100, level+1));
+$('resMenu').onclick   = () => { state = 'menu'; Snd.stopMusic(); showScreen('menu'); };
+
+/* ── клавиатура (0–9, стереть, ОК) ── */
+(function buildPad(){
+  const pad = $('pad');
+  const keys = ['1','2','3','4','5','6','7','8','9','del','0','ok'];
+  keys.forEach(k => {
+    const b = document.createElement('div');
+    b.className = 'key' + (k === 'ok' ? ' ok' : k === 'del' ? ' del' : '');
+    b.textContent = k === 'del' ? '⌫' : k === 'ok' ? '✔' : k;
+    if (k === 'ok') b.style.gridColumn = 'span 2';
+    b.onpointerdown = e => { e.preventDefault(); typeKey(k); };
+    pad.appendChild(b);
+  });
+})();
+addEventListener('keydown', e => {
+  if (state !== 'task') return;
+  if (e.key >= '0' && e.key <= '9') typeKey(e.key);
+  else if (e.key === 'Backspace') typeKey('del');
+  else if (e.key === 'Enter') typeKey('ok');
+});
+showScreen('menu');
+
+/* ── хуки для автотестов ── */
+window.__dbg = {
+  get state(){ return state; },
+  get info(){ return { level, waveIdx, waves: waves.length, foes: foes.filter(f=>!f.dead).length,
+    team: team.map(h => ({ n:h.n, cur:h.cur, dead:h.dead })), task: task && task.text, ans: task && task.ans,
+    shield, save:{...save} }; },
+  start(L){ startLevel(L); },
+  pick(i){ const h = team.filter(x=>!x.dead)[i||0]; if (!h) return null; picked = h; goTask(); return h.n; },
+  answer(ok){ if (state !== 'task') return null; typed = String(ok ? task.ans : task.ans + 1);
+    $('answer').textContent = typed; checkAnswer(); return typed; },
+  hurtTeam(){ team.forEach(h => { h.cur = 1; }); return true; },
+  setSave(s){ Object.assign(save, s); saveNow(); return save; },
+  skipStory(){ while (сцена) $('storyNext').click(); return state; },
+  get episode(){ return эпизод(level).name; },
+};
+</script>
+
+<script>
+// Игра стартует МГНОВЕННО из памяти телефона и работает без интернета.
+// Если интернет есть — проверяем крошечный version.json и обновляемся сами.
+(function () {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(function(){}));
+  }
+  function баннер(текст) {
+    var d = document.getElementById('updBanner');
+    if (!d) { d = document.createElement('div'); d.id = 'updBanner';
+      d.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99999;' +
+        'background:#0b1220ee;color:#7dd3fc;font:900 15px system-ui;padding:10px 18px;border-radius:14px;' +
+        'border:2px solid #7dd3fc55;box-shadow:0 8px 24px #0009';
+      document.body.appendChild(d); }
+    d.textContent = текст;
+    return d;
+  }
+  async function applyUpdate() {
+    баннер('🔄 Обновляю игру…');
+    try {
+      const ks = await caches.keys();
+      await Promise.all(ks.map(function (k) { return caches.delete(k); }));
+      if ('serviceWorker' in navigator) {
+        const rs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(rs.map(function (r) { return r.unregister(); }));
+      }
+    } catch (_) {}
+    // ⚠️ Простой location.reload() может взять СТАРЫЙ html из кэша браузера,
+    // и обновление «не приходит» (жалоба Марка 23.08). Перезагружаемся по новому адресу.
+    setTimeout(function () {
+      location.replace(location.pathname + '?v=' + Date.now());
+    }, 400);
+  }
+  window.__forceUpdate = applyUpdate;
+  async function checkVersion(показать) {
+    try {
+      const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw 0;
+      const j = await r.json();
+      if (!j || !j.v) throw 0;
+      if (j.v === window.__APP_VER) { if (показать) { const d = баннер('✅ У тебя самая свежая версия');
+          setTimeout(function(){ d.remove(); }, 2500); } return false; }
+      if (window.__onUpdate) window.__onUpdate(applyUpdate); else applyUpdate();
+      return true;
+    } catch (_) {
+      if (показать) { const d = баннер('📴 Нет интернета — обновить не выйдет');
+        setTimeout(function(){ d.remove(); }, 2500); }
+      return false;
+    }
+  }
+  window.__checkUpdate = function () { return checkVersion(true); };
+  window.addEventListener('load', function () { setTimeout(checkVersion, 300); setTimeout(checkVersion, 3000); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkVersion(); });
+  addEventListener('online', checkVersion);
+  setInterval(checkVersion, 60 * 1000);
+})();
+</script>
+</body>
+</html>

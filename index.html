@@ -93,7 +93,11 @@
   #plusHud{position:fixed;left:8px;top:44px;z-index:21;background:#26102fcc;border:1px solid #ffffff22;
     border-radius:12px;padding:5px 12px;font-weight:900;display:none}
   body.fight #plusHud{display:block}
-  #fightBtns{position:fixed;right:8px;top:44px;z-index:24;display:none;flex-direction:column;gap:6px}
+  /* ⛶ на весь экран — доступна всегда, поверх всех экранов */
+  #fsBtn{position:fixed;right:8px;top:8px;z-index:45;width:42px;height:42px;border-radius:12px;
+    background:#3b2748dd;border:2px solid #ffffff33;color:#fff;font-size:20px;cursor:pointer}
+  #fsBtn:active{background:#5b3a70}
+  #fightBtns{position:fixed;right:8px;top:56px;z-index:24;display:none;flex-direction:column;gap:6px}
   body.fight #fightBtns{display:flex}
   .fb{background:#3b2748dd;border:2px solid #ffffff22;border-radius:12px;color:#fff;font-weight:900;
     font-size:13px;padding:7px 12px;cursor:pointer}
@@ -113,7 +117,7 @@
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png">
   <meta name="msapplication-TileImage" content="icon-192.png">
   <meta name="msapplication-TileColor" content="#ff5fa2">
-  <script>window.__APP_VER = "a584158c3e";</script>
+  <script>window.__APP_VER = "8789d3fe13";</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -203,6 +207,7 @@
 </div>
 <div id="big"></div>
 <div id="toast"></div>
+<button id="fsBtn" title="На весь экран">⛶</button>
 <div id="plusHud">➕ 0</div>
 <!-- кнопки прямо в бою: уровни и выход в меню -->
 <div id="fightBtns">
@@ -523,7 +528,7 @@ function startLevel(L) {
   $('mergeAsk').classList.remove('show');
   waves = волныДляУровня(L);
   создатьКоманду(); создатьВолну(waves[0]); обновитьПлюсы();
-  Snd.init();
+  Snd.init(); goFullscreen();
   showScreen('');
   document.body.classList.add('fight');
   $('hud').classList.remove('hidden');
@@ -1110,6 +1115,21 @@ function renderDiff() {
     g.appendChild(el);
   });
 }
+/* ⛶ ПОЛНЫЙ ЭКРАН (правило всех игр Марка) — кнопка + автозапуск при старте боя */
+function goFullscreen() {
+  const el = document.documentElement;
+  if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
+}
+$('fsBtn').onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else goFullscreen();
+  Snd.init(); Snd.key();
+};
+document.addEventListener('fullscreenchange', () => {
+  $('fsBtn').textContent = document.fullscreenElement ? '🗗' : '⛶';
+  resize();
+});
 $('fbLevels').onclick  = () => { Snd.stopMusic(); state = 'menu'; renderLevels(); showScreen('levels'); };
 $('fbMenu').onclick    = () => { Snd.stopMusic(); state = 'menu'; showScreen('menu'); };
 $('btnDiff').onclick   = () => { renderDiff(); showScreen('diffScr'); };

@@ -1,7 +1,7 @@
-// service worker «Математический шторм» — версия по содержимому: a584158c3e
+// service worker «Математический шторм» — версия по содержимому: 8789d3fe13
 // Игра всегда отдаётся МГНОВЕННО из памяти телефона (и работает без интернета).
 // Новая версия скачивается фоном при следующем заходе и применяется сама.
-const CACHE = 'matshtorm-a584158c3e';
+const CACHE = 'matshtorm-8789d3fe13';
 const ASSETS = ['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-512-maskable.png','./apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

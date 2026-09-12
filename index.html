@@ -117,7 +117,7 @@
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png">
   <meta name="msapplication-TileImage" content="icon-192.png">
   <meta name="msapplication-TileColor" content="#ff5fa2">
-  <script>window.__APP_VER = "8789d3fe13";</script>
+  <script>window.__APP_VER = "c811ce5326";</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -288,6 +288,65 @@ const EPISODES = [
   { from:91, to:100, name:'Логово Десятки',        desc:'Все в сборе! Впереди двойник и гигантская Десятка' },
 ];
 const эпизод = L => EPISODES.find(e => L >= e.from && L <= e.to) || EPISODES[0];
+/* 🌍 ПЕЙЗАЖ СВОЙ У КАЖДОГО МИРА (жалоба Марка 12.09: «проходим одну и ту же поляну»).
+   В «Лесу умножения» — настоящие деревья со стволами и кронами, в пещере — сталагмиты,
+   в замке — башни, у реки — волны и так далее. Меняется каждые 10 уровней. */
+const ФОНЫ = [
+  { верх:'#3b1348', сер:'#26102f', низ:'#160a1c', цвет:'#3c8c46', вид:'куст'      },
+  { верх:'#16482a', сер:'#0d2d1a', низ:'#06170d', цвет:'#2f7a3a', вид:'дерево'    },
+  { верх:'#2b1f3d', сер:'#1a1327', низ:'#0d0812', цвет:'#6b5b7a', вид:'сталагмит' },
+  { верх:'#33294d', сер:'#1f1933', низ:'#120f1e', цвет:'#8a7fb0', вид:'башня'     },
+  { верх:'#123a58', сер:'#0b2436', низ:'#071827', цвет:'#3fa0cc', вид:'волна'     },
+  { верх:'#463320', сер:'#2b1f13', низ:'#170f08', цвет:'#8a6a3a', вид:'камень'    },
+  { верх:'#22344c', сер:'#15212f', низ:'#0a121c', цвет:'#5a7fa8', вид:'скобка'    },
+  { верх:'#1b4560', сер:'#10293a', низ:'#08161f', цвет:'#9fd8ff', вид:'лёд'       },
+  { верх:'#5a4220', сер:'#3a2a14', низ:'#22180a', цвет:'#c8a05a', вид:'бархан'    },
+  { верх:'#4d1318', сер:'#2c0a0e', низ:'#150507', цвет:'#a02a2a', вид:'логово'    },
+];
+const фонМира = L => ФОНЫ[Math.max(0, EPISODES.indexOf(эпизод(L)))] || ФОНЫ[0];
+function рисоватьДекор(ctx, вид, x, y, k, цвет, i) {
+  ctx.save(); ctx.translate(x, y);
+  if (вид === 'дерево') {                       // 🌳 настоящее дерево: ствол и крона
+    const h = 70*k, w = 10*k;
+    ctx.fillStyle = 'rgba(70,45,25,.85)'; ctx.fillRect(-w/2, -h, w, h);
+    ctx.fillStyle = цвет;
+    for (const [dx, dy, r] of [[0,-h-12*k,30*k],[-18*k,-h+6*k,22*k],[18*k,-h+4*k,24*k]]) {
+      ctx.beginPath(); ctx.arc(dx, dy, r, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    ctx.beginPath(); ctx.arc(-8*k, -h-18*k, 12*k, 0, 7); ctx.fill();
+  } else if (вид === 'сталагмит') {
+    ctx.fillStyle = цвет; ctx.beginPath();
+    ctx.moveTo(-16*k, 0); ctx.lineTo(0, -80*k); ctx.lineTo(16*k, 0); ctx.closePath(); ctx.fill();
+  } else if (вид === 'башня') {
+    ctx.fillStyle = цвет; ctx.fillRect(-16*k, -70*k, 32*k, 70*k);
+    ctx.beginPath(); ctx.moveTo(-22*k, -70*k); ctx.lineTo(0, -100*k); ctx.lineTo(22*k, -70*k); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-6*k, -52*k, 12*k, 16*k);
+  } else if (вид === 'волна') {
+    ctx.strokeStyle = цвет; ctx.lineWidth = 5*k; ctx.beginPath();
+    for (let t = -40; t <= 40; t += 4) ctx.lineTo(t*k, -14*k + Math.sin(t*0.25 + i) * 9*k);
+    ctx.stroke();
+  } else if (вид === 'камень') {
+    ctx.fillStyle = цвет; ctx.beginPath(); ctx.ellipse(0, -16*k, 30*k, 18*k, 0.2, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.ellipse(-8*k, -22*k, 12*k, 6*k, 0.2, 0, 7); ctx.fill();
+  } else if (вид === 'скобка') {
+    ctx.strokeStyle = цвет; ctx.lineWidth = 8*k; ctx.lineCap = 'round'; ctx.beginPath();
+    ctx.arc(0, -40*k, 34*k, -0.8*Math.PI, -0.2*Math.PI); ctx.stroke();
+  } else if (вид === 'лёд') {
+    ctx.fillStyle = цвет; ctx.globalAlpha = 0.75; ctx.beginPath();
+    ctx.moveTo(-14*k, 0); ctx.lineTo(-5*k, -66*k); ctx.lineTo(6*k, -40*k); ctx.lineTo(15*k, 0);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  } else if (вид === 'бархан') {
+    ctx.fillStyle = цвет; ctx.beginPath(); ctx.ellipse(0, 0, 60*k, 20*k, 0, Math.PI, 0); ctx.fill();
+  } else if (вид === 'логово') {
+    ctx.fillStyle = цвет; ctx.beginPath();
+    ctx.moveTo(-26*k, 0); ctx.lineTo(0, -74*k); ctx.lineTo(26*k, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.ellipse(0, -10*k, 12*k, 16*k, 0, 0, 7); ctx.fill();
+  } else {                                       // куст
+    ctx.fillStyle = цвет; ctx.beginPath(); ctx.ellipse(0, -12*k, 28*k, 14*k, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
 let save = { level:1, best:1, unlocked:[1], wins:0, solved:0, errors:0, coins:0, up:{}, diff:0 };
 const diff = () => DIFFS[save.diff | 0] || DIFFS[0];
 try { const r = JSON.parse(localStorage.getItem(SK)||'null'); if (r) save = Object.assign(save, r); } catch(_){}
@@ -393,10 +452,14 @@ function drawDigit(x, y, size, digit, color, opt = {}) {
       ctx.beginPath(); ctx.arc(s*ex + er*0.05, ey - er*0.2, er*0.18, 0, 7); ctx.fill();
     }
   }
-  if (mood === 'angry') {                        // сердитые брови
-    ctx.strokeStyle = '#141018'; ctx.lineWidth = size*0.045; ctx.lineCap = 'round';
+  if (mood === 'angry') {
+    /* ⚠️ Брови были ГРУСТНЫЕ (жалоба Марка 12.09): внутренний конец задран ВВЕРХ — это печаль.
+       Злость наоборот: внутренний конец опущен К НОСУ, внешний поднят. */
+    ctx.strokeStyle = '#141018'; ctx.lineWidth = size*0.06; ctx.lineCap = 'round';
     for (const s of [-1, 1]) { ctx.beginPath();
-      ctx.moveTo(s*ex - s*er*0.9, ey - er*1.5); ctx.lineTo(s*ex + s*er*0.7, ey - er*0.85); ctx.stroke(); }
+      ctx.moveTo(s*ex - s*er*1.0, ey - er*0.45);   // внутренний конец — НИЗКО, у носа
+      ctx.lineTo(s*ex + s*er*0.8, ey - er*1.6);    // внешний — ВЫСОКО
+      ctx.stroke(); }
   }
   // 😀 рот
   ctx.strokeStyle = '#141018'; ctx.lineWidth = size*0.05; ctx.lineCap = 'round';
@@ -771,12 +834,20 @@ function loseLevel() {
 
 /* ═══ ➕ СЛИЯНИЕ ЦИФР: тащишь одну цифру на другую → «объединить?» (замысел Марка) ═══ */
 function героПод(x, y) {
-  return team.find(h => !h.dead && Math.hypot(h.x - x, h.y - y) < h.size*0.62);
+  return team.find(h => !h.dead && Math.hypot(h.x - x, h.y - y) < h.size*0.85);
 }
+/* ⚠️ Жалоба Марка 12.09: «веду цифру к цифре — не объединяются». Тащить разрешалось
+   ТОЛЬКО в состоянии «выбери цифру»; в бою и на марше палец просто ничего не делал,
+   и игра молчала. Теперь тащить можно и между волнами, а если сейчас нельзя —
+   игра прямо говорит, когда можно. */
+const можноТащить = () => (state === 'choosing' || state === 'march') && !слияние;
 cv.addEventListener('pointerdown', e => {
-  if (state !== 'choosing' || слияние) return;
   const h = героПод(e.clientX, e.clientY);
   if (!h) return;
+  if (!можноТащить()) {
+    if (state === 'task') toast('➕ Объединять можно, когда выбираешь цифру или идёшь между волнами');
+    return;
+  }
   drag = { hero:h, x:e.clientX, y:e.clientY, ox:h.x, oy:h.y, moved:false };
 });
 addEventListener('pointermove', e => {
@@ -789,7 +860,7 @@ addEventListener('pointerup', e => {
   const d = drag; drag = null;
   if (!d.moved) return;                                    // просто тап — не тащил
   const цель = team.find(h => h !== d.hero && !h.dead &&
-    Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.size*0.7);
+    Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.size*0.95);
   if (!цель) { пересобратьПорядок(d.hero, e.clientX); return; }   // просто переставили в строю
   if (плюсики <= 0) { toast('➕ Нужен бонус «плюсик» — их дают за волны'); return; }
   const сумма = d.hero.n + цель.n;
@@ -892,19 +963,25 @@ function drawBar(x, y, w, h, k, color) {
   ctx.strokeRect(x - w/2, y, w, h);
 }
 function drawScene(dt) {
-  // фон-арена
+  // 🌍 фон-арена: у каждого мира свой (жалоба Марка 12.09 «одна и та же поляна»)
+  const Ф = фонМира(typeof level === 'number' && level ? level : (save.level || 1));
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#3b1348'); g.addColorStop(0.55, '#26102f'); g.addColorStop(1, '#160a1c');
+  g.addColorStop(0, Ф.верх); g.addColorStop(0.55, Ф.сер); g.addColorStop(1, Ф.низ);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // 🌿 полянка: кустики и трава, во время марша уезжают влево (команда идёт вперёд)
   if (state === 'march') марш = Math.max(0, марш - dt);
   const прокрутка = (state === 'march' ? (2.0 - марш) : 0) * 240 + perf*8;
-  for (let i = 0; i < 14; i++) {
-    const bx = ((i*137 + 60) - прокрутка) % (W + 160) ; const x = bx < -80 ? bx + W + 160 : bx;
-    const by = H*0.46 + (i%3)*H*0.045;
-    ctx.fillStyle = i%3 ? 'rgba(60,140,70,.35)' : 'rgba(80,170,90,.3)';
-    ctx.beginPath(); ctx.ellipse(x, by, 26 + (i%4)*8, 12 + (i%3)*4, 0, 0, 7); ctx.fill();
+  // дальний план — мельче и бледнее, ближний — крупнее: получается глубина
+  for (let слой = 0; слой < 2; слой++) {
+    const скорость = слой ? 1 : 0.45, k = слой ? 1 : 0.62;
+    ctx.globalAlpha = слой ? 0.85 : 0.45;
+    for (let i = 0; i < 9; i++) {
+      const bx = ((i*163 + слой*70 + 40) - прокрутка*скорость) % (W + 200);
+      const x = bx < -100 ? bx + W + 200 : bx;
+      const by = H*(слой ? 0.50 : 0.44) + (i%3)*H*0.02;
+      рисоватьДекор(ctx, Ф.вид, x, by, k*(0.85 + (i%3)*0.12), Ф.цвет, i);
+    }
   }
+  ctx.globalAlpha = 1;
   // «пол» арены
   ctx.fillStyle = 'rgba(255,255,255,.05)';
   ctx.beginPath(); ctx.ellipse(W*0.5, H*0.52, W*0.55, H*0.13, 0, 0, 7); ctx.fill();

@@ -1,5 +1,5 @@
 // Scoped offline application updater; version changes with the payload and updater.
-const VERSION = '9578923d4e';
+const VERSION = 'a1a87ef9f0';
 const PREFIX = "matshtorm-";
 const CACHE = PREFIX + VERSION;
 const SCOPE = new URL(self.registration.scope);

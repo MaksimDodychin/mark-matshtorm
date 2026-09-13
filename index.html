@@ -117,7 +117,7 @@
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png">
   <meta name="msapplication-TileImage" content="icon-192.png">
   <meta name="msapplication-TileColor" content="#ff5fa2">
-  <script>window.__APP_VER = "895f641d03";</script>
+  <script>window.__APP_VER = "c03e3cfdfd";</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -127,7 +127,7 @@
   <div style="font-size:56px">🌩✖️</div>
   <h1>МАТЕМАТИЧЕСКИЙ ШТОРМ</h1>
   <p class="sub">Битва цифр! Твоя команда — живые циферки. Чтобы ударить — реши пример.
-     Ошибся — бьют тебя. 100 уровней и 10 гигантских боссов.</p>
+     Ошибся — бьют тебя. 130 уровней и 13 гигантских боссов, а после Десятки приходят БУКВЫ.</p>
   <button class="btn" id="btnPlay">⚔️ В БОЙ</button>
   <button class="btn dim" id="btnDiff">🎚 СЛОЖНОСТЬ</button>
   <button class="btn dim" id="btnTeam">🔢 МОЯ КОМАНДА</button>
@@ -262,6 +262,23 @@ const HEROES = [
 ];
 const heroByN = n => HEROES.find(h => h.n === n);
 
+/* ── 🔤 БУКВЫ АНГЛИЙСКОГО АЛФАВИТА (новые враги после Десятки).
+   A красная и B голубая — так сказал Марк, остальные цвета подобрал я:
+   каждая следующая буква чуть «холоднее» предыдущей, а Z — почти чёрная. ── */
+const БУКВЫ = [
+  { б:'A', цвет:'#e2352f' }, { б:'B', цвет:'#38bdf8' }, { б:'C', цвет:'#f59e0b' },
+  { б:'D', цвет:'#22c55e' }, { б:'E', цвет:'#a855f7' }, { б:'F', цвет:'#ec4899' },
+  { б:'G', цвет:'#14b8a6' }, { б:'H', цвет:'#f97316' }, { б:'I', цвет:'#eab308' },
+  { б:'J', цвет:'#6366f1' }, { б:'K', цвет:'#84cc16' }, { б:'L', цвет:'#06b6d4' },
+  { б:'M', цвет:'#d946ef' }, { б:'N', цвет:'#ef4444' }, { б:'O', цвет:'#0ea5e9' },
+  { б:'P', цвет:'#f472b6' }, { б:'Q', цвет:'#65a30d' }, { б:'R', цвет:'#fb923c' },
+  { б:'S', цвет:'#8b5cf6' }, { б:'T', цвет:'#2dd4bf' }, { б:'U', цвет:'#facc15' },
+  { б:'V', цвет:'#60a5fa' }, { б:'W', цвет:'#34d399' }, { б:'X', цвет:'#e11d48' },
+  { б:'Y', цвет:'#7dd3fc' }, { б:'Z', цвет:'#2b2b33' },
+];
+const БУКВ_ЭПИЗОД = { 11:[0, 9], 12:[10, 19], 13:[20, 25] };   // какие буквы в каком эпизоде
+const буквенный = L => L > 100;
+
 /* ── 💾 сохранение ── */
 const SK = 'matshtorm_v1';
 /* 🎚 УРОВНИ СЛОЖНОСТИ (названия придумал Марк 06.09) */
@@ -286,6 +303,11 @@ const EPISODES = [
   { from:71, to:80,  name:'Ледяные степени',       desc:'Восьмёрка замёрзла там, где числа растут в квадрате' },
   { from:81, to:90,  name:'Пустыня больших чисел', desc:'Девятка идёт по бескрайним сотням и тысячам' },
   { from:91, to:100, name:'Логово Десятки',        desc:'Все в сборе! Впереди двойник и гигантская Десятка' },
+  /* 🔤 ПОСЛЕ ДЕСЯТКИ (идея Марка): врагами становятся буквы английского алфавита.
+     Буква — это спрятанное число, поэтому и задачи тут — уравнения. */
+  { from:101,to:110, name:'Алфавитный шторм',      desc:'Цифры свободны — но пришли БУКВЫ. Каждая прячет в себе число' },
+  { from:111,to:120, name:'Буквенный лес',         desc:'От K до T: чем дальше, тем крепче буквы держат свои числа' },
+  { from:121,to:130, name:'Логово Зет',            desc:'Последние буквы. В конце ждёт чёрная Z — самая упрямая из всех' },
 ];
 const эпизод = L => EPISODES.find(e => L >= e.from && L <= e.to) || EPISODES[0];
 /* 🌍 ПЕЙЗАЖ СВОЙ У КАЖДОГО МИРА (жалоба Марка 12.09: «проходим одну и ту же поляну»).
@@ -302,6 +324,9 @@ const ФОНЫ = [
   { верх:'#1b4560', сер:'#10293a', низ:'#08161f', цвет:'#9fd8ff', вид:'лёд',       пол:'rgba(200,240,255,.14)' },
   { верх:'#5a4220', сер:'#3a2a14', низ:'#22180a', цвет:'#c8a05a', вид:'бархан',    пол:'rgba(240,215,150,.12)' },
   { верх:'#4d1318', сер:'#2c0a0e', низ:'#150507', цвет:'#a02a2a', вид:'логово',    пол:'rgba(255,120,60,.10)' },
+  { верх:'#123a4d', сер:'#0b2430', низ:'#06151c', цвет:'#3fb0c8', вид:'скобка',    пол:'rgba(120,230,255,.10)' },
+  { верх:'#1d4224', сер:'#122a17', низ:'#08170c', цвет:'#3f9a4a', вид:'дерево',    пол:'rgba(150,255,150,.09)' },
+  { верх:'#1a1a22', сер:'#101016', низ:'#06060a', цвет:'#4a4a58', вид:'логово',    пол:'rgba(200,200,220,.07)' },
 ];
 const фонМира = L => ФОНЫ[Math.max(0, EPISODES.indexOf(эпизод(L)))] || ФОНЫ[0];
 /* 🌦 ПОГОДА МИРА (заказ Марка 12.09): в лесу кружатся листья, в пещере капает,
@@ -594,6 +619,9 @@ const ТЕМЫ_МИРА = [
   ['pow','pow','mul','brack'],               // 8 · Ледяные степени
   ['big','big','add','sub'],                 // 9 · Пустыня больших чисел
   ['mix','brack','pow','eq','big','frac'],   // 10 · Логово Десятки — всё сразу
+  ['eq','eq','eq','add'],                    // 11 · Алфавитный шторм — буква = число
+  ['eq','eq','mul','brack'],                 // 12 · Буквенный лес
+  ['eq','mix','brack','pow'],                // 13 · Логово Зет — всё сразу, но с буквами
 ];
 const ЗАДАЧА_ИМЯ = { add:'сложение', sub:'вычитание', mul:'умножение', div:'деление',
   eq:'уравнение', frac:'доли', rem:'деление с остатком', brack:'скобки', pow:'степень',
@@ -671,17 +699,26 @@ function создатьКоманду() {
 }
 function создатьВолну(w) {
   foes = [];
-  if (w === 'boss') {                                        // 🎃 гигантский босс-цифра
-    const num = level/10;                                     // 10-й → 1, 100-й → 10
-    const hp = 60 + num*38;
-    foes.push({ n:num, boss:true, color:'#111114', maxhp:hp, cur:hp, dmg:9+num, mood:'angry',
+  /* 🔤 после сотого уровня врагами становятся БУКВЫ (идея Марка) */
+  const бук = буквенный(level);
+  const диап = бук ? (БУКВ_ЭПИЗОД[EPISODES.indexOf(эпизод(level)) + 1] || [0, 25]) : null;
+  if (w === 'boss') {                                        // 🎃 гигантский босс
+    const num = Math.min(10, level/10);
+    const hp = 60 + (бук ? 70 + (level-100) : num*38);
+    const б = бук ? БУКВЫ[диап[1]] : null;                    // босс — последняя буква эпизода
+    foes.push({ n:num, гл:б ? б.б : num, boss:true, color:'#111114',
+                цветБуквы:б ? б.цвет : null,
+                maxhp:hp, cur:hp, dmg:9 + num + (бук ? 4 : 0), mood:'angry',
                 shake:0, flash:0, x:0, y:0, size:0, dead:false });
     return;
   }
   const кол = clamp(1 + Math.floor(level/16) + ri(0, 2), 1, 4);
   for (let i = 0; i < кол; i++) {
-    const hp = 14 + w*7 + ri(0, 6);
-    foes.push({ n:ri(1,9), color:'#111114', maxhp:hp, cur:hp, dmg:4 + Math.floor(level/9), mood:'angry',
+    const hp = 14 + w*7 + ri(0, 6) + (бук ? 12 : 0);
+    const б = бук ? БУКВЫ[ri(диап[0], диап[1])] : null;
+    foes.push({ n:б ? (БУКВЫ.indexOf(б) + 1) : ri(1,9), гл:б ? б.б : null,
+                color:'#111114', цветБуквы:б ? б.цвет : null,
+                maxhp:hp, cur:hp, dmg:4 + Math.floor(level/9), mood:'angry',
                 shake:0, flash:0, x:0, y:0, size:0, dead:false });
   }
 }
@@ -915,7 +952,7 @@ function winLevel() {
   const пораСпасать = (level === 1) || (level % 10 === 0) || (Math.random() < 0.3);
   const спасли = пораСпасать && след <= 9 && !save.unlocked.includes(след);
   if (спасли) save.unlocked.push(след);
-  if (level >= save.level) save.level = Math.min(100, level + 1);
+  if (level >= save.level) save.level = Math.min(130, level + 1);
   save.best = Math.max(save.best, level);
   saveNow();
   $('resIcon').textContent = level % 10 === 0 ? '👑' : '🏆';
@@ -1118,13 +1155,13 @@ function drawScene(dt) {
   // враги (чёрные цифры)
   foes.forEach(f => {
     f.shake = Math.max(0, f.shake - dt*40); f.flash = Math.max(0, f.flash - dt);
-    drawDigit(f.x, f.y, f.size, f.n, f.color,
+    drawDigit(f.x, f.y, f.size, f.гл || f.n, f.цветБуквы || f.color,
       { mood:f.dead ? 'dead' : 'angry', shake:f.shake, flash:f.flash, dead:f.dead });
     if (!f.dead) drawBar(f.x, f.y + f.size*0.72, f.size*0.95, f.boss ? 14 : 9, f.cur/f.maxhp, '#ef4444');
     if (f.boss && !f.dead) {
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
       ctx.font = '900 ' + Math.round(H*0.028) + 'px "Arial Black", sans-serif';
-      ctx.fillText('👹 БОСС ' + f.n, f.x, f.y + f.size*0.72 + 30);
+      ctx.fillText('👹 БОСС ' + (f.гл || f.n), f.x, f.y + f.size*0.72 + 30);
     }
   });
   // 🛡 щит
@@ -1363,6 +1400,8 @@ window.__dbg = {
     team: team.map(h => ({ n:h.n, cur:h.cur, dead:h.dead })), task: task && task.text, ans: task && task.ans,
     shield, save:{...save} }; },
   start(L){ startLevel(L); },
+  get foes(){ return foes.map(f => ({ гл:f.гл || f.n, цвет:f.цветБуквы || f.color, босс:!!f.boss })); },
+  get episodes(){ return EPISODES.map(e => e.from + '-' + e.to + ' ' + e.name); },
   pick(i){ const h = team.filter(x=>!x.dead)[i||0]; if (!h) return null; picked = h; goTask(); return h.n; },
   answer(ok){ if (state !== 'task') return null; typed = String(ok ? task.ans : task.ans + 1);
     $('answer').textContent = typed; checkAnswer(); return typed; },
